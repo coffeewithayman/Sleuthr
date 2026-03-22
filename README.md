@@ -1,0 +1,234 @@
+# Sleuthr
+
+![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)
+![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
+[![GitHub issues](https://img.shields.io/github/issues/coffeewithayman/sleuthr)](https://github.com/coffeewithayman/sleuthr/issues)
+
+> **Don't want to deal with service accounts and GCP setup?** [sleuthr.app](https://sleuthr.app) is the hosted version — connect with OAuth in minutes, get scheduled audits, and receive alerts when new public files are found.
+
+This tool performs comprehensive review of Google Drive files shared publicly across your Google Workspace domain, with options for automated remediation and detailed reporting.
+
+## Features
+
+- **Domain-wide Audit**: Scan all users in your Google Workspace domain for publicly shared files
+- **Multiple Output Formats**: Console output, HTML reports, and Google Sheets integration
+- **Configurable Fields**: Display file names, sharing links, file IDs, and modification dates
+- **Error Handling**: Robust error handling with detailed debug mode
+- **API Validation**: Early detection of missing API permissions with direct console links
+- **Automated Lockdown**: Remove public sharing from stale files while preserving access levels
+
+## Scripts
+
+### sleuthr.py
+Performs a comprehensive search of all files stored in Google Drive that are shared as "anyone with the link can access", even outside of your domain.
+
+**Basic Usage:**
+```bash
+python3 sleuthr.py
+```
+
+**Advanced Usage:**
+```bash
+# Show specific fields
+python3 sleuthr.py -f name link id modified
+
+# Generate Google Sheets report
+python3 sleuthr.py --sheets
+
+# Audit shared drives only
+python3 sleuthr.py --shared-drives-only
+
+# Console output only (no HTML)
+python3 sleuthr.py --no-html -f name link
+
+# Debug mode with detailed error messages
+python3 sleuthr.py --debug --sheets
+```
+
+**Output Options:**
+- **Console**: Real-time progress with customizable field display
+- **HTML Reports**: Individual HTML files for each user (in `out-YYYYMMDD-HHMMSS/` directory)
+- **Google Sheets**: Collaborative spreadsheet with separate tabs for each user
+
+## Command Line Options
+
+### sleuthr.py Options
+- `--fields`, `-f`: Output fields (name, link, id, modified)
+- `--no-html`: Skip HTML report generation
+- `--sheets`: Create Google Sheets report
+- `--shared-drives-only`: Audit shared drives only, skip individual user files
+- `--debug`: Enable debug mode with detailed error messages
+- `--help`: Show help message with examples
+
+### lockdown.py
+Automatically removes public sharing from files last modified more than the grace period (default: 30 days) that are owned by the specified user. It retains the share role (e.g. "reader", "editor") but restricts access to your domain only.
+
+**Usage:**
+```bash
+python3 lockdown.py user@yourdomain.com
+```
+
+**Features:**
+- **Grace Period**: Only processes files older than `LOCKDOWN_GRACE_DAYS` setting
+- **Dry Run Mode**: Shows what would be changed without making actual changes
+- **TSV Output**: Logs all changes to `out-ld-[email]-[timestamp].tsv`
+- **Role Preservation**: Maintains original permission levels (viewer/editor/etc.)
+
+## Installation
+
+### Prerequisites
+- Python 3.10+ recommended
+- Google Workspace Admin access
+- Google Cloud Project with appropriate APIs enabled
+
+# Setup
+
+## Google Cloud Setup
+
+### 1. Create Service Account
+1. Go to [Google Cloud Console > Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
+2. Select your project
+3. Click "Create Service Account"
+4. Give it a descriptive name (e.g., `sleuthr-service-account`)
+5. Skip the optional steps
+6. Click on newly created service account
+6. Click "Keys" tab → "Add Key" → Download JSON file
+7. Place the JSON file in your project directory
+8. Update `SERVICE_ACCOUNT_FILE` and `DOMAIN` in `settings.py`
+
+### 2. Domain-wide Delegation
+Configure the service account to impersonate users across your domain:
+
+1. Go to [Google Workspace Admin Console > Domain-wide Delegation](https://admin.google.com/ac/owl/domainwidedelegation)
+2. Click "Add new"
+3. Enter your service account's Client ID (from the JSON file)
+4. Add these OAuth scopes:
+   ```
+   https://www.googleapis.com/auth/admin.directory.user.readonly,https://www.googleapis.com/auth/drive.metadata.readonly,https://www.googleapis.com/auth/drive.readonly,https://www.googleapis.com/auth/drive,https://www.googleapis.com/auth/spreadsheets,https://www.googleapis.com/auth/drive.file
+   ```
+5. Click Authorize
+
+Your service account now has access to run the scans!
+
+### 3. Enable Required APIs - One Time
+The tool will automatically detect missing APIs and provide direct console links to enable them:
+
+```bash
+python3 sleuthr.py --sheets
+
+Validating Google APIs...
+Error logged to: errors.txt
+ERROR: Admin SDK Directory API is not enabled.
+Enable it here: https://console.developers.google.com/apis/api/admin.googleapis.com/overview?project=XXXXXXXXXXXXX
+Error logged to: errors.txt
+ERROR: Google Drive API is not enabled.
+Enable it here: https://console.developers.google.com/apis/api/drive.googleapis.com/overview?project=XXXXXXXXXXXXX
+ERROR: Google Sheets API is not enabled.
+Enable it here: https://console.developers.google.com/apis/api/sheets.googleapis.com/overview?project=XXXXXXXXXXXXX
+
+Please enable the required APIs using the links above, then re-run the script.
+
+```
+
+**Click on the links to enable the API's** 
+
+
+## Configuration
+
+Edit `settings.py` with your domain details:
+
+```python
+DEBUG = False
+DOMAIN = "yourdomain.com"
+ADMIN_USERNAME = "admin@yourdomain.com"  # Must be a domain admin
+SERVICE_ACCOUNT_FILE = "your-service-account-file.json"
+LOCKDOWN_GRACE_DAYS = 30  # Days before files are eligible for lockdown
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **API Not Enabled**: The tool will show direct console links to enable required APIs
+2. **Permission Denied**: Ensure service account has domain-wide delegation with correct scopes
+3. **Invalid Admin User**: Verify `ADMIN_USERNAME` is a valid domain administrator
+4. **Authentication Errors**: Check that service account JSON file is valid and accessible
+
+### Error Log
+All errors encountered during execution are logged with full tracebacks to `errors.txt` in the working directory. Check this file for details on any failures.
+
+### Debug Mode
+Use `--debug` flag for detailed error information:
+```bash
+python3 sleuthr.py --debug
+```
+
+This provides:
+- Stack traces for errors
+- Verbose API validation output
+- Detailed Google API error messages
+
+## License
+
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+
+### Key License Terms:
+- **Open Source**: Free to use, modify, and distribute
+- **Copyleft**: Modifications must be released under the same license
+- **Network Use**: If you run this as a web service, you must provide source code to users
+- **No Commercial SaaS**: Cannot be used to create commercial or SaaS products without releasing full source code
+
+See the [LICENSE](LICENSE) file for complete terms.
+
+### Why AGPL-3.0?
+This license ensures that improvements to the tool benefit the entire community while preventing commercial entities from creating proprietary SaaS offerings based on this code.
+
+## Contributing
+
+Please open an issue first before making a PR. Thank you!
+
+All contributions must be compatible with AGPL-3.0 licensing.
+
+## Support
+
+For issues and questions:
+1. Check the troubleshooting section above
+2. Use `--debug` mode for detailed error information
+3. Review Google Cloud Console for API and permission issues
+4. Open an issue on the project repository
+
+## Security
+
+This tool requires broad Google Workspace permissions. Ensure:
+- Service account JSON files are kept secure
+- Access is restricted to authorized administrators
+- Regular security reviews of domain-wide delegation permissions
+- Monitoring of audit tool usage in your environment
+
+**Scope Purposes:**
+- `admin.directory.user.readonly`: List all users in your domain
+- `drive.metadata.readonly`: Read file metadata and sharing permissions
+- `drive.readonly`: Read file details and permissions during audit
+- `drive`: Modify file permissions (for lockdown.py)
+- `spreadsheets`: Create and edit Google Sheets reports
+- `drive.file`: Create files in Google Drive (for Sheets reports)
+
+
+## Hosted Version: Sleuthr.app
+
+[Sleuthr.app](https://sleuthr.app) is the managed cloud version of this tool. It runs the same audits without any GCP or service account setup.
+
+| | Sleuthr OSS (this repo) | [Sleuthr.app](https://sleuthr.app) |
+|---|---|---|
+| **Setup** | Service account + GCP project required | OAuth login, no setup |
+| **Authentication** | Domain-wide delegation via service account | OAuth — no credentials to manage |
+| **Scheduling** | Manual runs only | Automatic daily / weekly audits |
+| **Dashboard** | HTML reports + Google Sheets | Web dashboard with historical trends |
+| **Alerts** | None | Email and Slack notifications |
+| **Remediation** | CLI (`lockdown.py`) | One-click from the dashboard |
+| **Multi-domain** | One domain per config | Multiple domains in one account |
+| **Cost** | Free (self-hosted) | Paid SaaS |
+
+Thanks to [Kurt Seifreid](https://github.com/kurtseifried) for the [original inspiration](https://github.com/kurtseifried/google-drive-audit)! 
+
+Thanks as well to [Claude](https://github.com/anthropics/claude-code) for all your help!
