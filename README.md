@@ -229,6 +229,8 @@ This tool requires broad Google Workspace permissions. Ensure:
 | **Multi-domain** | One domain per config | Multiple domains in one account |
 | **Cost** | Free (self-hosted) | Paid SaaS |
 
+# Acknowledgements
+
 Thanks to [Kurt Seifreid](https://github.com/kurtseifried) for the [original inspiration](https://github.com/kurtseifried/google-drive-audit)! 
 
 Thanks as well to [Claude](https://github.com/anthropics/claude-code) for all your help!
