@@ -190,7 +190,7 @@ def create_google_sheets_report(user_data, admin_email, ai_enabled=False):
 	# Create spreadsheet
 	spreadsheet_body = {
 		'properties': {
-			'title': 'Cool Drive Audit Report - {}'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+			'title': 'Sleuthr Report - {}'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 		}
 	}
 	
@@ -271,7 +271,7 @@ def create_google_sheets_report(user_data, admin_email, ai_enabled=False):
 	shared_drive_files = len(user_data.get('__SHARED_DRIVES__', []))
 	
 	dashboard_data = [
-		['Cool Drive Audit Report'],
+		['Sleuthr Report'],
 		[''],
 		['Audit Date:', datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
 		['Domain:', settings.DOMAIN],
@@ -336,7 +336,7 @@ def create_google_sheets_report(user_data, admin_email, ai_enabled=False):
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(
-		description='Cool Drive Audit - Audit Google Drive files for public sharing across your domain',
+		description='Sleuthr - Audit Google Drive files for public sharing across your domain',
 		usage='%(prog)s [options]\n\nExamples:\n  %(prog)s\n  %(prog)s -f name link\n  %(prog)s -f name link id modified --no-html',
 		formatter_class=argparse.RawDescriptionHelpFormatter
 	)
